@@ -1,0 +1,48 @@
+from datetime import datetime
+
+from airflow import DAG
+
+from airflow.operators.bash import (
+    BashOperator
+)
+
+default_args = {
+    "owner": "data-engineering",
+    "retries": 2
+}
+
+with DAG(
+    dag_id="supply_chain_batch_pipeline",
+    start_date=datetime(2026, 1, 1),
+    schedule="@daily",
+    catchup=False,
+    default_args=default_args
+) as dag:
+
+    generate_data = BashOperator(
+        task_id="generate_data",
+        bash_command=(
+            "python "
+            "src/generate_supply_chain_data.py"
+        )
+    )
+
+    transform_data = BashOperator(
+        task_id="transform_data",
+        bash_command=(
+            "python "
+            "src/transform_supply_chain.py"
+        )
+    )
+
+    build_ai_features = BashOperator(
+        task_id="build_ai_features",
+        bash_command=(
+            "python "
+            "src/build_ai_features.py"
+        )
+    )
+
+    generate_data \
+        >> transform_data \
+        >> build_ai_features
